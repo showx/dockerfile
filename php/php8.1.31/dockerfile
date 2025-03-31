@@ -1,0 +1,42 @@
+FROM php:8.1.31-fpm
+LABEL maintainer="shengsheng <9448923@qq.com>"
+RUN sed -i 's#http://deb.debian.org#https://mirrors.aliyun.com#g' /etc/apt/sources.list.d/debian.sources
+RUN apt-get clean
+RUN apt-get update && apt-get install -y \
+		libfreetype-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev \
+        librdkafka-dev \
+        libzip-dev \
+        libevent-dev \
+        libssl-dev \
+        wget \
+        procps \
+        libc-ares-dev \
+        libcurl4-openssl-dev \
+        apt-utils \
+        unzip \
+        libssl-dev
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+	&& docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install bcmath \
+    && docker-php-ext-install pcntl \
+    && docker-php-ext-install zip \
+    && docker-php-ext-install sockets \
+    && docker-php-ext-install pdo_mysql
+RUN pecl install redis-5.3.7 \
+    pecl install rdkafka 
+RUN pecl install --configureoptions 'enable-event-debug="no" enable-event-sockets="yes"' event
+RUN pecl install --configureoptions  'enable-reader="yes"' xlswriter
+#RUN pecl install --configureoptions 'enable-event-debug="no" enable-event-sockets="yes --with-event-libevent-dir=/usr --with-event-pthreads=no --with-event-extra=yes --with-event-openssl=yes with-event-ns=no --with-openssl-dir=/usr/include/openssl"' event
+# RUN docker-php-ext-enable event
+RUN echo "extension=redis.so" > /usr/local/etc/php/conf.d/redis.ini
+RUN echo "extension=rdkafka.so" > /usr/local/etc/php/conf.d/rdkafka.ini 
+RUN echo "extension=event.so" > /usr/local/etc/php/conf.d/event.ini 
+RUN echo "extension=xlswriter.so" > /usr/local/etc/php/conf.d/xlswriter.ini 
+RUN pecl install --configureoptions 'enable-sockets="no" enable-openssl="yes --with-openssl-dir=/usr/include/openssl" enable-http2="yes" enable-mysqlnd="yes" enable-swoole-json="no" enable-swoole-curl="yes" enable-cares="yes" enable-brotli="yes" enable-swoole-pgsql="no" enable-swoole-sqlite="no" with-swoole-odbc="no" with-swoole-oracle="no" '   swoole-5.1.1 
+RUN echo "extension=swoole.so" > /usr/local/etc/php/conf.d/swoole.ini
+    # 增加composer的安装,受网络下载的因素，可能在最后才处理比较好
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php \
+    && mv composer.phar /usr/local/bin/composer
