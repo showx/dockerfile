@@ -11,6 +11,11 @@ docker run -it -d -v c:\code:/webwww --name php-fpm-803 show/php-fpm:8.0.3
 
 docker run -it -d -v /webwww/:/webwww  --name php-fpm-mgsdkapi show/php-fpm:8.0.3
 
+# 查看系统版本
+cat /etc/os-release
+
+docker pull nginx:1.24
+docker run -it -d -v d:\code:/webwww --name nginx nginx:1.24
 
 docker pull redis:5.0.9-alpine
 docker run -it -d --name redis redis:5.0.9-alpine

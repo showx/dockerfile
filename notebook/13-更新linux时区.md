@@ -10,7 +10,9 @@ sudo sh -c "echo 'Asia/Shanghai' > /etc/timezone"
 # 验证更改
 date
 
-
 # 快速命令
 sudo cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
 && echo "Asia/Shanghai" | sudo tee /etc/timezone
+
+cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+&& echo "Asia/Shanghai" | tee /etc/timezone

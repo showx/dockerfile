@@ -1,6 +1,12 @@
 docker
 mysql -p 3600:3600
 
+
+docker run -it -d -v d:\code:/webwww -p 80:80 --name  nginx nginx:1.24
+docker run -it -d -v d:\code:/webwww --name php8131 show/php-fpm:8.1.31-bullseye
+docker run -it -d -p 6379:6379 --name redis redis:7.0.11-bullseye
+
+
 docker run ubuntu echo "Hello, World!"
 
 
@@ -35,6 +41,7 @@ docker build -t mgsdk:v2 .
 docker build -t mgsdk:v21 .
 
 php-sdkv2-803
+
 
 
 
@@ -96,15 +103,6 @@ docker exec -i php-fpm bash -c "cd /webwww && ls -l"
 https://stackoverflow.com/questions/28037802/docker-exec-failed-cd-executable-file-not-found-in-path
 
 docker ps 
-安装ps命令:
-apt-get install make
-apt-get install procps
-apt-get install vim
-apt-get install iputils-ping
-apt-get install lsof
-apt-get install  net-tools   安装ifconfig
-​apt-get install  telnet
-​apt-get update && apt-get install procps   ps命令
 docker 官方镜像很多用 debian 的？
 https://www.v2ex.com/t/414239
 
