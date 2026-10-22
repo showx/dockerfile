@@ -1,0 +1,146 @@
+FROM php:8.2.35-fpm-alpine
+
+LABEL maintainer="shengsheng <9448923@qq.com>"
+
+# ============================================
+# 1. 配置阿里云 Alpine 镜像源
+# ============================================
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' \
+    /etc/apk/repositories
+
+# ============================================
+# 2. 安装运行时依赖
+# ============================================
+RUN apk add --no-cache \
+    freetype \
+    libjpeg-turbo \
+    libpng \
+    librdkafka \
+    libzip \
+    libevent \
+    openssl \
+    c-ares \
+    curl \
+    brotli-libs \
+    libstdc++ \
+    wget \
+    procps \
+    unzip \
+    ca-certificates
+
+# ============================================
+# 3. 安装编译依赖
+# ============================================
+RUN apk add --no-cache --virtual .build-deps \
+    $PHPIZE_DEPS \
+    linux-headers \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    librdkafka-dev \
+    libzip-dev \
+    libevent-dev \
+    openssl-dev \
+    c-ares-dev \
+    curl-dev \
+    brotli-dev
+
+# ============================================
+# 4. 安装 PHP 内置扩展
+# ============================================
+RUN docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        gd \
+        bcmath \
+        pcntl \
+        zip \
+        sockets \
+        pdo_mysql
+
+# ============================================
+# 5. 安装 Redis 扩展
+# ============================================
+RUN pecl install redis-5.3.7 \
+    && docker-php-ext-enable redis
+
+# ============================================
+# 6. 安装 Kafka 扩展
+# ============================================
+RUN pecl install rdkafka \
+    && docker-php-ext-enable rdkafka
+
+# ============================================
+# 7. 安装 Event 扩展
+# ============================================
+RUN printf '\n' | pecl install event \
+    && docker-php-ext-enable event
+
+# ============================================
+# 8. 安装 XLSWriter 扩展
+# ============================================
+RUN pecl install --configureoptions \
+        'enable-reader="yes"' \
+        xlswriter \
+    && docker-php-ext-enable xlswriter
+
+# ============================================
+# 9. 安装 Swoole 5.1.1
+# ============================================
+RUN pecl install --configureoptions \
+        'enable-sockets="no" enable-openssl="yes" enable-http2="yes" enable-mysqlnd="yes" enable-swoole-json="no" enable-swoole-curl="yes" enable-cares="yes" enable-brotli="yes" enable-swoole-pgsql="no" enable-swoole-sqlite="no"' \
+        swoole-5.1.1 \
+    && docker-php-ext-enable swoole
+
+# ============================================
+# 10. 安装 Composer 2（不依赖 Docker Hub）
+# ============================================
+RUN curl -fSL --retry 3 \
+        https://getcomposer.org/installer \
+        -o /tmp/composer-setup.php \
+    && php /tmp/composer-setup.php \
+        --2 \
+        --install-dir=/usr/local/bin \
+        --filename=composer \
+    && rm -f /tmp/composer-setup.php \
+    && composer --version
+
+# ============================================
+# 11. 配置 Composer 阿里云镜像源
+# ============================================
+RUN composer config -g repos.packagist composer \
+    https://mirrors.aliyun.com/composer/
+
+# ============================================
+# 12. 清理编译依赖
+# ============================================
+RUN apk del .build-deps \
+    && rm -rf /tmp/pear \
+    && rm -f /root/.pearrc
+
+# ============================================
+# 13. PHP 配置
+# ============================================
+RUN { \
+    echo 'memory_limit=512M'; \
+    echo 'upload_max_filesize=20M'; \
+    echo 'post_max_size=20M'; \
+    echo 'max_execution_time=60'; \
+    echo 'date.timezone=Asia/Shanghai'; \
+    echo 'expose_php=Off'; \
+    echo 'session.upload_progress.enabled=Off'; \
+    echo 'session.use_strict_mode=1'; \
+    } > /usr/local/etc/php/conf.d/custom.ini
+
+# ============================================
+# 14. 设置工作目录
+# ============================================
+WORKDIR /webwww/www
+
+# ============================================
+# 15. PHP-FPM 端口
+# ============================================
+EXPOSE 9000
+
+CMD ["php-fpm"]
